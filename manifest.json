@@ -1,0 +1,24 @@
+{
+  "name": "Notes vocales",
+  "short_name": "Notes vocales",
+  "description": "Enregistrez des notes audio rapidement",
+  "start_url": "./notes_vocales.html",
+  "display": "standalone",
+  "background_color": "#1a0533",
+  "theme_color": "#1a0533",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%23c084fc'/%3E%3Cpath fill='%231a0533' d='M96 40a28 28 0 0 1 28 28v36a28 28 0 0 1-56 0V68a28 28 0 0 1 28-28zm42 62a4 4 0 0 1 8 0 50 50 0 0 1-46 49.9V164h14a4 4 0 0 1 0 8H78a4 4 0 0 1 0-8h14v-12.1A50 50 0 0 1 46 102a4 4 0 0 1 8 0 42 42 0 0 0 84 0z'/%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%23c084fc'/%3E%3Cpath fill='%231a0533' d='M256 80a80 80 0 0 1 80 80v96a80 80 0 0 1-160 0V160a80 80 0 0 1 80-80zm116 174a8 8 0 0 1 16 0 132 132 0 0 1-124 131.6V420h36a8 8 0 0 1 0 16H212a8 8 0 0 1 0-16h36v-34.4A132 132 0 0 1 124 254a8 8 0 0 1 16 0 116 116 0 0 0 232 0z'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

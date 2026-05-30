@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Notes vocales">
+<meta name="theme-color" content="#1a0533">
+<title>Notes vocales</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#1a0533;--bg2:#250845;--card:#2e0d55;--accent:#c084fc;--accent2:#f0abfc;--gold:#fbbf24;--red:#f87171;--text:#f3e8ff;--muted:#a78bca;--border:rgba(192,132,252,0.2);--radius:20px;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);overflow-x:hidden;}
+body{background:var(--bg);background-image:radial-gradient(ellipse at 20% 0%,#3b0764 0%,transparent 60%),radial-gradient(ellipse at 80% 100%,#1e1b4b 0%,transparent 60%);min-height:100vh;padding-bottom:3rem;}
+header{padding:3rem 1.5rem 1.5rem;display:flex;align-items:center;gap:14px;}
+header h1{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--text);letter-spacing:-0.5px;}
+.mic-icon-header{width:44px;height:44px;background:var(--accent);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.mic-icon-header svg{width:22px;height:22px;fill:#1a0533;}
+.record-zone{margin:0 1.25rem 2rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;}
+.title-wrap{margin-bottom:1.25rem;}
+.title-label{font-size:11px;font-weight:500;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;}
+.title-input{width:100%;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:17px;font-family:'DM Sans',sans-serif;color:var(--text);-webkit-appearance:none;}
+.title-input::placeholder{color:var(--muted);}
+.title-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(192,132,252,0.15);}
+.rec-row{display:flex;align-items:center;gap:1.25rem;}
+.rec-btn{width:76px;height:76px;border-radius:50%;border:none;background:var(--accent);color:#1a0533;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:transform 0.15s,background 0.2s;box-shadow:0 0 0 8px rgba(192,132,252,0.12);}
+.rec-btn:active{transform:scale(0.93);}
+.rec-btn.recording{background:var(--red);box-shadow:0 0 0 8px rgba(248,113,113,0.15);animation:pulse-rec 1.4s infinite;}
+@keyframes pulse-rec{0%,100%{box-shadow:0 0 0 8px rgba(248,113,113,0.15);}50%{box-shadow:0 0 0 18px rgba(248,113,113,0.04);}}
+.rec-btn svg{width:30px;height:30px;fill:currentColor;}
+.rec-info{flex:1;}
+.rec-status{font-size:13px;color:var(--muted);margin-bottom:6px;}
+.rec-timer{font-family:'Syne',sans-serif;font-size:36px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;line-height:1;margin-bottom:10px;}
+.rec-timer.active{color:var(--red);}
+.waveform{display:flex;align-items:center;gap:3px;height:28px;}
+.waveform span{display:inline-block;width:4px;border-radius:3px;background:var(--accent);opacity:0.25;height:5px;transition:height 0.08s ease;}
+.waveform.active span{opacity:1;}
+.section-header{display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;margin-bottom:0.75rem;}
+.section-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;}
+.count-badge{background:rgba(192,132,252,0.15);color:var(--accent);font-size:12px;font-weight:500;padding:3px 10px;border-radius:20px;}
+.note-list{display:flex;flex-direction:column;gap:10px;padding:0 1.25rem;}
+.note-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color 0.2s;}
+.note-card.playing{border-color:var(--accent);}
+.note-top{display:flex;align-items:center;gap:14px;padding:1.1rem 1.1rem 1.1rem 1.25rem;}
+.note-dot{width:42px;height:42px;border-radius:13px;background:rgba(192,132,252,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.note-dot svg{width:20px;height:20px;fill:var(--accent);}
+.note-meta{flex:1;min-width:0;}
+.note-title-text{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;}
+.note-sub{font-size:12px;color:var(--muted);}
+.note-actions{display:flex;gap:6px;flex-shrink:0;}
+.icon-btn{width:42px;height:42px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;}
+.icon-btn:active{transform:scale(0.92);}
+.icon-btn.play-active{background:var(--accent);border-color:var(--accent);color:#1a0533;}
+.icon-btn.edit-active{background:rgba(192,132,252,0.15);border-color:var(--accent);color:var(--accent);}
+.icon-btn.del{color:#f87171;border-color:rgba(248,113,113,0.2);background:rgba(248,113,113,0.05);}
+.icon-btn svg{width:18px;height:18px;fill:currentColor;}
+.progress-bar{height:3px;background:rgba(255,255,255,0.07);}
+.progress-fill{height:100%;background:var(--accent);width:0%;transition:width 0.4s linear;}
+.edit-row{display:flex;align-items:center;gap:10px;padding:1rem 1.25rem 1.1rem;border-top:1px solid var(--border);background:rgba(0,0,0,0.15);}
+.edit-input{flex:1;background:rgba(255,255,255,0.06);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;font-size:16px;font-family:'DM Sans',sans-serif;color:var(--text);-webkit-appearance:none;}
+.edit-input:focus{outline:none;box-shadow:0 0 0 3px rgba(192,132,252,0.15);}
+.save-btn{padding:12px 18px;border-radius:10px;border:none;background:var(--accent);color:#1a0533;font-size:15px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;white-space:nowrap;}
+.save-btn:active{opacity:0.8;}
+.empty{text-align:center;color:var(--muted);font-size:16px;padding:3rem 0;}
+.empty svg{width:48px;height:48px;fill:var(--muted);opacity:0.4;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;}
+.toast{position:fixed;bottom:2.5rem;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#1a0533;font-size:14px;font-weight:700;font-family:'Syne',sans-serif;padding:12px 22px;border-radius:40px;opacity:0;transition:opacity 0.3s,transform 0.3s;pointer-events:none;white-space:nowrap;z-index:999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.install-btn{display:none;margin:0 1.25rem 1.5rem;width:calc(100% - 2.5rem);padding:16px;border-radius:var(--radius);border:1px solid rgba(250,191,36,0.4);background:rgba(250,191,36,0.08);color:var(--gold);font-size:15px;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;text-align:center;}
+.install-btn.visible{display:block;}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<header>
+  <div class="mic-icon-header">
+    <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3zm6.5 9a.5.5 0 0 1 1 0A7.5 7.5 0 0 1 12.5 18.5V21h2a.5.5 0 0 1 0 1h-5a.5.5 0 0 1 0-1h2v-2.5A7.5 7.5 0 0 1 4.5 11a.5.5 0 0 1 1 0 6.5 6.5 0 0 0 13 0z"/></svg>
+  </div>
+  <h1>Notes vocales</h1>
+</header>
+<button class="install-btn" id="installBtn">⊕ Ajouter à l'écran d'accueil</button>
+<div class="record-zone">
+  <div class="title-wrap">
+    <div class="title-label">Titre de la note</div>
+    <input class="title-input" id="noteTitle" type="text" placeholder="ex : Conseil de classe 6e…" maxlength="60">
+  </div>
+  <div class="rec-row">
+    <button class="rec-btn" id="recBtn" aria-label="Enregistrer">
+      <svg id="recIcon" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3zm6.5 9a.5.5 0 0 1 1 0A7.5 7.5 0 0 1 12.5 18.5V21h2a.5.5 0 0 1 0 1h-5a.5.5 0 0 1 0-1h2v-2.5A7.5 7.5 0 0 1 4.5 11a.5.5 0 0 1 1 0 6.5 6.5 0 0 0 13 0z"/></svg>
+    </button>
+    <div class="rec-info">
+      <div class="rec-status" id="recStatus">Appuyez pour enregistrer</div>
+      <div class="rec-timer" id="recTimer">0:00</div>
+      <div class="waveform" id="waveform">
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="section-header">
+  <span class="section-title">Mes notes</span>
+  <span class="count-badge" id="countBadge">0 note</span>
+</div>
+<div class="note-list" id="noteList"></div>
+
+<script>
+const DB_NAME='notesVocales',STORE='notes';
+let db,notes=[],recording=false,mediaRecorder,chunks=[],timerInterval,seconds=0,waveInterval,playingId=null,currentAudio=null,editingId=null,deferredPrompt=null;
+const recBtn=document.getElementById('recBtn'),recIcon=document.getElementById('recIcon'),recStatus=document.getElementById('recStatus'),recTimer=document.getElementById('recTimer'),noteTitle=document.getElementById('noteTitle'),noteList=document.getElementById('noteList'),countBadge=document.getElementById('countBadge'),waveform=document.getElementById('waveform'),bars=waveform.querySelectorAll('span'),toast=document.getElementById('toast'),installBtn=document.getElementById('installBtn');
+const STOP='<path d="M6 6h12v12H6z"/>',MIC='<path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3zm6.5 9a.5.5 0 0 1 1 0A7.5 7.5 0 0 1 12.5 18.5V21h2a.5.5 0 0 1 0 1h-5a.5.5 0 0 1 0-1h2v-2.5A7.5 7.5 0 0 1 4.5 11a.5.5 0 0 1 1 0 6.5 6.5 0 0 0 13 0z"/>',PLAY='<path d="M8 5v14l11-7z"/>',PAUSE='<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>',EDIT='<path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>',TRASH='<path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>',NOTE='<path d="M12 3a9 9 0 1 0 9 9 9 9 0 0 0-9-9zm1 13.5h-2v-6h2zm0-8h-2V6.5h2z"/>';
+function showToast(m){toast.textContent=m;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),2200);}
+function fmt(s){return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+function fmtDate(ts){return new Date(ts).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});}
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(STORE))d.createObjectStore(STORE,{keyPath:'id'});};r.onsuccess=e=>{db=e.target.result;res();};r.onerror=()=>rej();});}
+function getAllNotes(){return new Promise((res,rej)=>{const r=db.transaction(STORE,'readonly').objectStore(STORE).getAll();r.onsuccess=()=>res(r.result.sort((a,b)=>b.id-a.id));r.onerror=()=>rej();});}
+function saveNote(n){return new Promise((res,rej)=>{const r=db.transaction(STORE,'readwrite').objectStore(STORE).put(n);r.onsuccess=()=>res();r.onerror=()=>rej();});}
+function deleteNoteDB(id){return new Promise((res,rej)=>{const r=db.transaction(STORE,'readwrite').objectStore(STORE).delete(id);r.onsuccess=()=>res();r.onerror=()=>rej();});}
+function blobToB64(blob){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(blob);});}
+function animateWave(active){clearInterval(waveInterval);waveform.classList.toggle('active',active);if(!active){bars.forEach(b=>b.style.height='5px');return;}waveInterval=setInterval(()=>bars.forEach(b=>b.style.height=(6+Math.random()*22)+'px'),100);}
+recBtn.addEventListener('click',async()=>{
+  if(!recording){
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      mediaRecorder=new MediaRecorder(stream);chunks=[];
+      mediaRecorder.ondataavailable=e=>chunks.push(e.data);
+      mediaRecorder.onstop=async()=>{
+        const blob=new Blob(chunks,{type:'audio/webm'});
+        const b64=await blobToB64(blob);
+        const title=noteTitle.value.trim()||('Note du '+fmtDate(Date.now()));
+        const note={id:Date.now(),title,data:b64,dur:seconds,date:Date.now()};
+        await saveNote(note);notes.unshift(note);
+        noteTitle.value='';renderNotes();showToast('Note sauvegardée !');
+        stream.getTracks().forEach(t=>t.stop());
+        recStatus.textContent='Appuyez pour enregistrer';
+        recTimer.classList.remove('active');
+      };
+      mediaRecorder.start();recording=true;seconds=0;
+      recBtn.classList.add('recording');recIcon.innerHTML=STOP;
+      recStatus.textContent='Enregistrement…';recTimer.textContent='0:00';recTimer.classList.add('active');
+      animateWave(true);timerInterval=setInterval(()=>{seconds++;recTimer.textContent=fmt(seconds);},1000);
+    }catch(e){recStatus.textContent='Micro non disponible — vérifiez les permissions Chrome';}
+  } else {
+    mediaRecorder.stop();recording=false;clearInterval(timerInterval);
+    recBtn.classList.remove('recording');recIcon.innerHTML=MIC;
+    recStatus.textContent='Sauvegarde…';recTimer.textContent='0:00';animateWave(false);
+  }
+});
+function playNote(id){
+  const n=notes.find(x=>x.id===id);if(!n)return;
+  if(currentAudio){currentAudio.pause();currentAudio=null;}
+  if(playingId===id){playingId=null;renderNotes();return;}
+  const audio=new Audio(n.data);currentAudio=audio;playingId=id;renderNotes();
+  let el=0;const fill=document.getElementById('pf-'+id);
+  const prog=setInterval(()=>{el++;if(fill)fill.style.width=Math.min(100,Math.round(el/n.dur*100))+'%';},1000);
+  audio.onended=()=>{clearInterval(prog);playingId=null;currentAudio=null;renderNotes();};
+  audio.play();
+}
+async function deleteNote(id){
+  if(playingId===id&&currentAudio){currentAudio.pause();currentAudio=null;playingId=null;}
+  await deleteNoteDB(id);notes=notes.filter(n=>n.id!==id);renderNotes();showToast('Note supprimée');
+}
+function toggleEdit(id){editingId=(editingId===id)?null:id;renderNotes();if(editingId)setTimeout(()=>{const i=document.getElementById('ei-'+id);if(i){i.focus();i.select();}},60);}
+async function saveTitle(id){
+  const i=document.getElementById('ei-'+id);if(!i)return;
+  const t=i.value.trim();if(!t)return;
+  const n=notes.find(x=>x.id===id);if(!n)return;
+  n.title=t;await saveNote(n);editingId=null;renderNotes();showToast('Titre mis à jour');
+}
+function renderNotes(){
+  const c=notes.length;countBadge.textContent=c+' note'+(c>1?'s':'');
+  if(!c){noteList.innerHTML='<div class="empty"><svg viewBox="0 0 24 24">'+NOTE+'</svg>Aucune note pour l\'instant</div>';return;}
+  noteList.innerHTML=notes.map(n=>`<div class="note-card${playingId===n.id?' playing':''}"><div class="note-top"><div class="note-dot"><svg viewBox="0 0 24 24">${NOTE}</svg></div><div class="note-meta"><div class="note-title-text">${n.title}</div><div class="note-sub">${fmt(n.dur)} · ${fmtDate(n.date)}</div></div><div class="note-actions"><button class="icon-btn${playingId===n.id?' play-active':''}" onclick="playNote(${n.id})" aria-label="Écouter"><svg viewBox="0 0 24 24">${playingId===n.id?PAUSE:PLAY}</svg></button><button class="icon-btn${editingId===n.id?' edit-active':''}" onclick="toggleEdit(${n.id})" aria-label="Renommer"><svg viewBox="0 0 24 24">${EDIT}</svg></button><button class="icon-btn del" onclick="deleteNote(${n.id})" aria-label="Supprimer"><svg viewBox="0 0 24 24">${TRASH}</svg></button></div></div><div class="progress-bar"><div class="progress-fill" id="pf-${n.id}"></div></div>${editingId===n.id?`<div class="edit-row"><input class="edit-input" id="ei-${n.id}" type="text" value="${n.title}" maxlength="60" onkeydown="if(event.key==='Enter')saveTitle(${n.id})"><button class="save-btn" onclick="saveTitle(${n.id})">OK</button></div>`:''}</div>`).join('');
+}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;installBtn.classList.add('visible');});
+installBtn.addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();const{outcome}=await deferredPrompt.userChoice;if(outcome==='accepted'){installBtn.classList.remove('visible');showToast('Appli installée !');}deferredPrompt=null;});
+window.addEventListener('appinstalled',()=>{installBtn.classList.remove('visible');});
+if('serviceWorker' in navigator){
+  const swCode=`self.addEventListener('install',e=>e.waitUntil(caches.open('nv-v1').then(c=>c.addAll(['./']).catch(()=>{}))));self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)).catch(()=>caches.match('./'))));`;
+  const blob=new Blob([swCode],{type:'application/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+}
+openDB().then(()=>getAllNotes()).then(data=>{notes=data;renderNotes();}).catch(()=>{recStatus.textContent='Stockage indisponible';renderNotes();});
+</script>
+</body>
+</html>
