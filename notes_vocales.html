@@ -13,10 +13,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#1a0533;--bg2:#250845;--card:#2e0d55;--accent:#c084fc;--accent2:#f0abfc;--gold:#fbbf24;--red:#f87171;--text:#f3e8ff;--muted:#a78bca;--border:rgba(192,132,252,0.2);--radius:20px;}
+:root{--bg:#1a0533;--bg2:#250845;--card:#2e0d55;--accent:#c084fc;--gold:#fbbf24;--red:#f87171;--text:#f3e8ff;--muted:#a78bca;--border:rgba(192,132,252,0.2);--radius:20px;}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);overflow-x:hidden;}
-body{background:var(--bg);background-image:radial-gradient(ellipse at 20% 0%,#3b0764 0%,transparent 60%),radial-gradient(ellipse at 80% 100%,#1e1b4b 0%,transparent 60%);min-height:100vh;padding-bottom:3rem;}
+body{background-image:radial-gradient(ellipse at 20% 0%,#3b0764 0%,transparent 60%),radial-gradient(ellipse at 80% 100%,#1e1b4b 0%,transparent 60%);min-height:100vh;padding-bottom:3rem;}
 header{padding:3rem 1.5rem 1.5rem;display:flex;align-items:center;gap:14px;}
 header h1{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--text);letter-spacing:-0.5px;}
 .mic-icon-header{width:44px;height:44px;background:var(--accent);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -34,7 +34,7 @@ header h1{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var
 @keyframes pulse-rec{0%,100%{box-shadow:0 0 0 8px rgba(248,113,113,0.15);}50%{box-shadow:0 0 0 18px rgba(248,113,113,0.04);}}
 .rec-btn svg{width:30px;height:30px;fill:currentColor;}
 .rec-info{flex:1;}
-.rec-status{font-size:13px;color:var(--muted);margin-bottom:6px;}
+.rec-status{font-size:13px;color:var(--muted);margin-bottom:6px;line-height:1.4;}
 .rec-timer{font-family:'Syne',sans-serif;font-size:36px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;line-height:1;margin-bottom:10px;}
 .rec-timer.active{color:var(--red);}
 .waveform{display:flex;align-items:center;gap:3px;height:28px;}
@@ -110,81 +110,174 @@ header h1{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var
 <div class="note-list" id="noteList"></div>
 
 <script>
-const DB_NAME='notesVocales',STORE='notes';
-let db,notes=[],recording=false,mediaRecorder,chunks=[],timerInterval,seconds=0,waveInterval,playingId=null,currentAudio=null,editingId=null,deferredPrompt=null;
-const recBtn=document.getElementById('recBtn'),recIcon=document.getElementById('recIcon'),recStatus=document.getElementById('recStatus'),recTimer=document.getElementById('recTimer'),noteTitle=document.getElementById('noteTitle'),noteList=document.getElementById('noteList'),countBadge=document.getElementById('countBadge'),waveform=document.getElementById('waveform'),bars=waveform.querySelectorAll('span'),toast=document.getElementById('toast'),installBtn=document.getElementById('installBtn');
-const STOP='<path d="M6 6h12v12H6z"/>',MIC='<path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3zm6.5 9a.5.5 0 0 1 1 0A7.5 7.5 0 0 1 12.5 18.5V21h2a.5.5 0 0 1 0 1h-5a.5.5 0 0 1 0-1h2v-2.5A7.5 7.5 0 0 1 4.5 11a.5.5 0 0 1 1 0 6.5 6.5 0 0 0 13 0z"/>',PLAY='<path d="M8 5v14l11-7z"/>',PAUSE='<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>',EDIT='<path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>',TRASH='<path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>',NOTE='<path d="M12 3a9 9 0 1 0 9 9 9 9 0 0 0-9-9zm1 13.5h-2v-6h2zm0-8h-2V6.5h2z"/>';
+// ── Détection du format audio supporté ──────────────────────────────────────
+function getSupportedMimeType() {
+  const types = [
+    'audio/mp4',        // iOS Safari, Chrome Android récent
+    'audio/aac',        // iOS fallback
+    'audio/webm;codecs=opus', // Chrome/Firefox Desktop+Android
+    'audio/webm',
+    'audio/ogg;codecs=opus',
+    'audio/ogg',
+  ];
+  for (const t of types) {
+    if (MediaRecorder.isTypeSupported(t)) return t;
+  }
+  return ''; // laisser le navigateur choisir
+}
+
+const MIME = getSupportedMimeType();
+
+// ── IndexedDB ────────────────────────────────────────────────────────────────
+const DB_NAME='notesVocales', STORE='notes';
+let db, notes=[], recording=false, mediaRecorder, chunks=[], timerInterval,
+    seconds=0, waveInterval, playingId=null, currentAudio=null, editingId=null, deferredPrompt=null;
+
+const recBtn       = document.getElementById('recBtn');
+const recIcon      = document.getElementById('recIcon');
+const recStatus    = document.getElementById('recStatus');
+const recTimer     = document.getElementById('recTimer');
+const noteTitle    = document.getElementById('noteTitle');
+const noteList     = document.getElementById('noteList');
+const countBadge   = document.getElementById('countBadge');
+const waveform     = document.getElementById('waveform');
+const bars         = waveform.querySelectorAll('span');
+const toast        = document.getElementById('toast');
+const installBtn   = document.getElementById('installBtn');
+
+const STOP  = '<path d="M6 6h12v12H6z"/>';
+const MIC   = '<path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3zm6.5 9a.5.5 0 0 1 1 0A7.5 7.5 0 0 1 12.5 18.5V21h2a.5.5 0 0 1 0 1h-5a.5.5 0 0 1 0-1h2v-2.5A7.5 7.5 0 0 1 4.5 11a.5.5 0 0 1 1 0 6.5 6.5 0 0 0 13 0z"/>';
+const PLAY  = '<path d="M8 5v14l11-7z"/>';
+const PAUSE = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+const EDIT  = '<path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>';
+const TRASH = '<path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>';
+const NOTE  = '<path d="M12 3a9 9 0 1 0 9 9 9 9 0 0 0-9-9zm1 13.5h-2v-6h2zm0-8h-2V6.5h2z"/>';
+
 function showToast(m){toast.textContent=m;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),2200);}
 function fmt(s){return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
 function fmtDate(ts){return new Date(ts).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});}
+
 function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(STORE))d.createObjectStore(STORE,{keyPath:'id'});};r.onsuccess=e=>{db=e.target.result;res();};r.onerror=()=>rej();});}
 function getAllNotes(){return new Promise((res,rej)=>{const r=db.transaction(STORE,'readonly').objectStore(STORE).getAll();r.onsuccess=()=>res(r.result.sort((a,b)=>b.id-a.id));r.onerror=()=>rej();});}
 function saveNote(n){return new Promise((res,rej)=>{const r=db.transaction(STORE,'readwrite').objectStore(STORE).put(n);r.onsuccess=()=>res();r.onerror=()=>rej();});}
 function deleteNoteDB(id){return new Promise((res,rej)=>{const r=db.transaction(STORE,'readwrite').objectStore(STORE).delete(id);r.onsuccess=()=>res();r.onerror=()=>rej();});}
 function blobToB64(blob){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(blob);});}
-function animateWave(active){clearInterval(waveInterval);waveform.classList.toggle('active',active);if(!active){bars.forEach(b=>b.style.height='5px');return;}waveInterval=setInterval(()=>bars.forEach(b=>b.style.height=(6+Math.random()*22)+'px'),100);}
-recBtn.addEventListener('click',async()=>{
-  if(!recording){
-    try{
-      const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-      mediaRecorder=new MediaRecorder(stream);chunks=[];
-      mediaRecorder.ondataavailable=e=>chunks.push(e.data);
-      mediaRecorder.onstop=async()=>{
-        const blob=new Blob(chunks,{type:'audio/webm'});
-        const b64=await blobToB64(blob);
-        const title=noteTitle.value.trim()||('Note du '+fmtDate(Date.now()));
-        const note={id:Date.now(),title,data:b64,dur:seconds,date:Date.now()};
-        await saveNote(note);notes.unshift(note);
-        noteTitle.value='';renderNotes();showToast('Note sauvegardée !');
-        stream.getTracks().forEach(t=>t.stop());
-        recStatus.textContent='Appuyez pour enregistrer';
+
+function animateWave(active){
+  clearInterval(waveInterval);
+  waveform.classList.toggle('active',active);
+  if(!active){bars.forEach(b=>b.style.height='5px');return;}
+  waveInterval=setInterval(()=>bars.forEach(b=>b.style.height=(6+Math.random()*22)+'px'),100);
+}
+
+recBtn.addEventListener('click', async () => {
+  if (!recording) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+      const options = MIME ? {mimeType: MIME} : {};
+      mediaRecorder = new MediaRecorder(stream, options);
+      chunks = [];
+      mediaRecorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
+      mediaRecorder.onstop = async () => {
+        const mimeUsed = mediaRecorder.mimeType || MIME || 'audio/webm';
+        const blob = new Blob(chunks, {type: mimeUsed});
+        const b64  = await blobToB64(blob);
+        const title = noteTitle.value.trim() || ('Note du ' + fmtDate(Date.now()));
+        const note = {id: Date.now(), title, data: b64, mime: mimeUsed, dur: seconds, date: Date.now()};
+        await saveNote(note);
+        notes.unshift(note);
+        noteTitle.value = '';
+        renderNotes();
+        showToast('Note sauvegardée !');
+        stream.getTracks().forEach(t => t.stop());
+        recStatus.textContent = 'Appuyez pour enregistrer';
         recTimer.classList.remove('active');
       };
-      mediaRecorder.start();recording=true;seconds=0;
-      recBtn.classList.add('recording');recIcon.innerHTML=STOP;
-      recStatus.textContent='Enregistrement…';recTimer.textContent='0:00';recTimer.classList.add('active');
-      animateWave(true);timerInterval=setInterval(()=>{seconds++;recTimer.textContent=fmt(seconds);},1000);
-    }catch(e){recStatus.textContent='Micro non disponible — vérifiez les permissions Chrome';}
+      // Collecter toutes les données à l'arrêt
+      mediaRecorder.start();
+      recording = true; seconds = 0;
+      recBtn.classList.add('recording'); recIcon.innerHTML = STOP;
+      recStatus.textContent = 'Enregistrement…';
+      recTimer.textContent = '0:00'; recTimer.classList.add('active');
+      animateWave(true);
+      timerInterval = setInterval(() => { seconds++; recTimer.textContent = fmt(seconds); }, 1000);
+    } catch(e) {
+      recStatus.textContent = 'Micro non disponible — autorisez le micro dans les réglages';
+    }
   } else {
-    mediaRecorder.stop();recording=false;clearInterval(timerInterval);
-    recBtn.classList.remove('recording');recIcon.innerHTML=MIC;
-    recStatus.textContent='Sauvegarde…';recTimer.textContent='0:00';animateWave(false);
+    mediaRecorder.stop();
+    recording = false; clearInterval(timerInterval);
+    recBtn.classList.remove('recording'); recIcon.innerHTML = MIC;
+    recStatus.textContent = 'Sauvegarde…'; recTimer.textContent = '0:00';
+    animateWave(false);
   }
 });
-function playNote(id){
-  const n=notes.find(x=>x.id===id);if(!n)return;
-  if(currentAudio){currentAudio.pause();currentAudio=null;}
-  if(playingId===id){playingId=null;renderNotes();return;}
-  const audio=new Audio(n.data);currentAudio=audio;playingId=id;renderNotes();
-  let el=0;const fill=document.getElementById('pf-'+id);
-  const prog=setInterval(()=>{el++;if(fill)fill.style.width=Math.min(100,Math.round(el/n.dur*100))+'%';},1000);
-  audio.onended=()=>{clearInterval(prog);playingId=null;currentAudio=null;renderNotes();};
-  audio.play();
+
+function playNote(id) {
+  const n = notes.find(x => x.id === id); if(!n) return;
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  if (playingId === id) { playingId = null; renderNotes(); return; }
+  // Reconstruire le blob avec le bon MIME type stocké
+  const audio = new Audio(n.data);
+  audio.setAttribute('playsinline','');        // iOS : ne pas passer en plein écran
+  audio.setAttribute('webkit-playsinline',''); // iOS ancien
+  currentAudio = audio; playingId = id; renderNotes();
+  let el = 0;
+  const fill = document.getElementById('pf-' + id);
+  const prog = setInterval(() => { el++; if(fill) fill.style.width = Math.min(100, Math.round(el/n.dur*100))+'%'; }, 1000);
+  audio.onended = () => { clearInterval(prog); playingId = null; currentAudio = null; renderNotes(); };
+  audio.onerror = () => { clearInterval(prog); playingId = null; currentAudio = null; renderNotes(); showToast('Erreur de lecture'); };
+  audio.play().catch(() => showToast('Appuyez à nouveau pour lire'));
 }
-async function deleteNote(id){
-  if(playingId===id&&currentAudio){currentAudio.pause();currentAudio=null;playingId=null;}
-  await deleteNoteDB(id);notes=notes.filter(n=>n.id!==id);renderNotes();showToast('Note supprimée');
+
+async function deleteNote(id) {
+  if(playingId===id && currentAudio){currentAudio.pause();currentAudio=null;playingId=null;}
+  await deleteNoteDB(id); notes=notes.filter(n=>n.id!==id); renderNotes(); showToast('Note supprimée');
 }
+
 function toggleEdit(id){editingId=(editingId===id)?null:id;renderNotes();if(editingId)setTimeout(()=>{const i=document.getElementById('ei-'+id);if(i){i.focus();i.select();}},60);}
+
 async function saveTitle(id){
   const i=document.getElementById('ei-'+id);if(!i)return;
   const t=i.value.trim();if(!t)return;
   const n=notes.find(x=>x.id===id);if(!n)return;
   n.title=t;await saveNote(n);editingId=null;renderNotes();showToast('Titre mis à jour');
 }
+
 function renderNotes(){
-  const c=notes.length;countBadge.textContent=c+' note'+(c>1?'s':'');
+  const c=notes.length; countBadge.textContent=c+' note'+(c>1?'s':'');
   if(!c){noteList.innerHTML='<div class="empty"><svg viewBox="0 0 24 24">'+NOTE+'</svg>Aucune note pour l\'instant</div>';return;}
-  noteList.innerHTML=notes.map(n=>`<div class="note-card${playingId===n.id?' playing':''}"><div class="note-top"><div class="note-dot"><svg viewBox="0 0 24 24">${NOTE}</svg></div><div class="note-meta"><div class="note-title-text">${n.title}</div><div class="note-sub">${fmt(n.dur)} · ${fmtDate(n.date)}</div></div><div class="note-actions"><button class="icon-btn${playingId===n.id?' play-active':''}" onclick="playNote(${n.id})" aria-label="Écouter"><svg viewBox="0 0 24 24">${playingId===n.id?PAUSE:PLAY}</svg></button><button class="icon-btn${editingId===n.id?' edit-active':''}" onclick="toggleEdit(${n.id})" aria-label="Renommer"><svg viewBox="0 0 24 24">${EDIT}</svg></button><button class="icon-btn del" onclick="deleteNote(${n.id})" aria-label="Supprimer"><svg viewBox="0 0 24 24">${TRASH}</svg></button></div></div><div class="progress-bar"><div class="progress-fill" id="pf-${n.id}"></div></div>${editingId===n.id?`<div class="edit-row"><input class="edit-input" id="ei-${n.id}" type="text" value="${n.title}" maxlength="60" onkeydown="if(event.key==='Enter')saveTitle(${n.id})"><button class="save-btn" onclick="saveTitle(${n.id})">OK</button></div>`:''}</div>`).join('');
+  noteList.innerHTML=notes.map(n=>`
+    <div class="note-card${playingId===n.id?' playing':''}">
+      <div class="note-top">
+        <div class="note-dot"><svg viewBox="0 0 24 24">${NOTE}</svg></div>
+        <div class="note-meta">
+          <div class="note-title-text">${n.title}</div>
+          <div class="note-sub">${fmt(n.dur)} · ${fmtDate(n.date)}</div>
+        </div>
+        <div class="note-actions">
+          <button class="icon-btn${playingId===n.id?' play-active':''}" onclick="playNote(${n.id})" aria-label="Écouter">
+            <svg viewBox="0 0 24 24">${playingId===n.id?PAUSE:PLAY}</svg>
+          </button>
+          <button class="icon-btn${editingId===n.id?' edit-active':''}" onclick="toggleEdit(${n.id})" aria-label="Renommer">
+            <svg viewBox="0 0 24 24">${EDIT}</svg>
+          </button>
+          <button class="icon-btn del" onclick="deleteNote(${n.id})" aria-label="Supprimer">
+            <svg viewBox="0 0 24 24">${TRASH}</svg>
+          </button>
+        </div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="pf-${n.id}"></div></div>
+      ${editingId===n.id?`<div class="edit-row"><input class="edit-input" id="ei-${n.id}" type="text" value="${n.title}" maxlength="60" onkeydown="if(event.key==='Enter')saveTitle(${n.id})"><button class="save-btn" onclick="saveTitle(${n.id})">OK</button></div>`:''}
+    </div>
+  `).join('');
 }
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;installBtn.classList.add('visible');});
-installBtn.addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();const{outcome}=await deferredPrompt.userChoice;if(outcome==='accepted'){installBtn.classList.remove('visible');showToast('Appli installée !');}deferredPrompt=null;});
-window.addEventListener('appinstalled',()=>{installBtn.classList.remove('visible');});
-if('serviceWorker' in navigator){
-  const swCode=`self.addEventListener('install',e=>e.waitUntil(caches.open('nv-v1').then(c=>c.addAll(['./']).catch(()=>{}))));self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)).catch(()=>caches.match('./'))));`;
-  const blob=new Blob([swCode],{type:'application/javascript'});
-  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
-}
+
+// PWA install prompt (Android Chrome)
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt=e; installBtn.classList.add('visible'); });
+installBtn.addEventListener('click', async () => { if(!deferredPrompt)return; deferredPrompt.prompt(); const{outcome}=await deferredPrompt.userChoice; if(outcome==='accepted'){installBtn.classList.remove('visible');showToast('Appli installée !');} deferredPrompt=null; });
+window.addEventListener('appinstalled', () => installBtn.classList.remove('visible'));
+
 openDB().then(()=>getAllNotes()).then(data=>{notes=data;renderNotes();}).catch(()=>{recStatus.textContent='Stockage indisponible';renderNotes();});
 </script>
 </body>
